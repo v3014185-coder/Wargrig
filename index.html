@@ -1,74 +1,56 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WarGrid - Стратегия</title>
-    
-    <!-- Подключение стилей (с точкой в начале для GitHub Pages) -->
-    <link rel="stylesheet" href="./style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WarGrid</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-    <!-- ЭКРАН МЕНЮ -->
-    <div id="menu-screen" class="screen active">
-        <h1 class="title">WarGrid</h1>
-        <p class="subtitle">Стратегия на сетке v1.0</p>
-        
-        <div class="doctrine-container">
-            <h2>Выбери доктрину</h2>
-            <div class="doctrine-cards">
-                <div class="doctrine-card" data-doctrine="infantry">
-                    <h3>Пехотная школа</h3>
-                    <p>Пехота призывается на 40% быстрее.</p>
-                    <span class="badge">Дёшево и надёжно</span>
-                </div>
-                <div class="doctrine-card" data-doctrine="tank">
-                    <h3>Танковая школа</h3>
-                    <p>Танки дешевле (120 вместо 150).</p>
-                    <span class="badge">Тяжёлый прорыв</span>
-                </div>
-            </div>
-        </div>
-
-        <button id="start-btn" class="btn btn-primary" disabled>В БОЙ</button>
-        <button id="how-to-play-btn" class="btn btn-secondary">Как играть</button>
+  <!-- ЭКРАН: ГЛАВНОЕ МЕНЮ -->
+  <section id="screen-menu" class="screen">
+    <div class="menu-card">
+      <h1 class="game-title">WarGrid</h1>
+      <p class="game-subtitle">Пошаговая стратегия 14×10</p>
+      <div class="menu-buttons">
+        <!-- Уникальные ID: btnPlay, btnHelp -->
+        <button id="btnPlay" class="btn btn-primary" type="button">В БОЙ</button>
+        <button id="btnHelp" class="btn btn-secondary" type="button">Как играть</button>
+      </div>
     </div>
+  </section>
 
-    <!-- ЭКРАН ИГРЫ -->
-    <div id="game-screen" class="screen">
-        <header class="hud">
-            <div class="hud-stats">
-                <span id="gold-display">Золото: 0</span>
-                <span id="infantry-display">Пехота: 0</span>
-                <span id="tank-display">Танки: 0</span>
-            </div>
-            <div class="hud-actions">
-                <button id="buy-infantry" class="btn btn-small">Купить пехоту (50)</button>
-                <button id="buy-tank" class="btn btn-small">Купить танк (150)</button>
-            </div>
-        </header>
-
-        <div id="status-message" class="status-message">Выбери клетку врага на границе и оправдай войну.</div>
-
-        <main class="grid-container">
-            <div id="game-grid" class="grid"></div>
-        </main>
-
-        <div id="timer-overlay" class="hidden">
-            <h2>Оправдание войны!</h2>
-            <div id="timer-display">0.0s</div>
-        </div>
+  <!-- ЭКРАН: ПРАВИЛА -->
+  <section id="screen-help" class="screen hidden">
+    <div class="menu-card help-card">
+      <h2 class="game-title">Как играть</h2>
+      <ul class="help-list">
+        <li>Клик по своей клетке — выбрать её.</li>
+        <li>Клик по нейтральной/вражеской клетке — атаковать.</li>
+        <li>Золото начисляется каждый тик за захваченные клетки.</li>
+        <li>Перед атакой действует таймер «Оправдание войны».</li>
+        <li>Захватывай клетки и расширяй свою территорию.</li>
+      </ul>
+      <!-- Уникальный ID: btnBack -->
+      <button id="btnBack" class="btn btn-secondary" type="button">Назад</button>
     </div>
+  </section>
 
-    <!-- ЭКРАН ПОБЕДЫ/ПОРАЖЕНИЯ -->
-    <div id="game-over-screen" class="screen">
-        <h1 id="game-over-title">Победа!</h1>
-        <p id="game-over-text">Вражеская столица захвачена.</p>
-        <button id="restart-btn" class="btn btn-primary">Играть снова</button>
+  <!-- ЭКРАН: ИГРА -->
+  <section id="screen-game" class="screen hidden">
+    <div class="game-layout">
+      <header class="hud">
+        <div class="hud-item">Золото: <span id="hudGold">0</span></div>
+        <div class="hud-item">Тик: <span id="hudTick">0</span></div>
+        <div class="hud-item">Оправдание войны: <span id="hudWarTimer">0</span></div>
+        <button id="btnToMenu" class="btn btn-small btn-secondary" type="button">В меню</button>
+      </header>
+      <!-- Сетка 14x10 генерируется в game.js -->
+      <div id="grid" class="grid" role="grid" aria-label="Игровое поле"></div>
     </div>
+  </section>
 
-    <!-- Подключение скрипта (с точкой в начале для GitHub Pages) -->
-    <script src="./game.js"></script>
+  <script src="game.js" defer></script>
 </body>
 </html>
