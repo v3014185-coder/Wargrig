@@ -3,54 +3,91 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WarGrid</title>
+  <title>WarGrid — Стратегия</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- ЭКРАН: ГЛАВНОЕ МЕНЮ -->
-  <section id="screen-menu" class="screen">
-    <div class="menu-card">
-      <h1 class="game-title">WarGrid</h1>
-      <p class="game-subtitle">Пошаговая стратегия 14×10</p>
-      <div class="menu-buttons">
-        <!-- Уникальные ID: btnPlay, btnHelp -->
-        <button id="btnPlay" class="btn btn-primary" type="button">В БОЙ</button>
-        <button id="btnHelp" class="btn btn-secondary" type="button">Как играть</button>
+  <!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ (в стиле TERRON) -->
+  <section id="screen-menu" class="screen active">
+    <div class="menu-container">
+      <header class="top-bar">
+        <div class="logo">WARGRID</div>
+        <div class="top-links">
+          <a href="#" class="top-link">НОВОСТИ</a>
+          <a href="#" class="top-link">МАГАЗИН</a>
+          <a href="#" class="top-link">РЕЙТИНГ</a>
+        </div>
+      </header>
+
+      <div class="main-panel">
+        <div class="profile-row">
+          <span class="profile-icon">👤</span>
+          <span class="profile-name">ИГРОК</span>
+          <span class="profile-skin">СКИН</span>
+        </div>
+
+        <div class="game-settings-row">
+          <span class="setting-badge">FFA 9С</span>
+          <span class="setting-badge gold">ЗОЛОТОЙ +2 ⏱ 9:14</span>
+          <span class="setting-badge diamond">АЛМАЗНЫЙ +5 ⏱ 19:14</span>
+        </div>
+
+        <div class="map-card">
+          <div class="map-image">
+            <!-- Заглушка для карты -->
+            <span class="map-label">КОМПАКТНАЯ КАРТА</span>
+          </div>
+          <div class="map-info">
+            <div>
+              <h2 class="map-title">ПРОХОД</h2>
+              <p class="map-players">0/5 ИГРОКОВ</p>
+            </div>
+            <button id="btnEnterLobby" class="btn btn-dark">ВОЙТИ</button>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn btn-dark full-width">+ СОЗДАТЬ ЛОББИ</button>
+          <button id="btnHelp" class="btn btn-light full-width">КАК ИГРАТЬ</button>
+        </div>
+      </div>
+      
+      <footer class="footer">
+        <span>WarGrid Alpha v1.0</span>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ЭКРАН 2: ПРАВИЛА -->
+  <section id="screen-help" class="screen hidden">
+    <div class="menu-container center-content">
+      <div class="help-card">
+        <h2>Как играть</h2>
+        <ul class="help-list">
+          <li>Клик по своей клетке — выбрать её.</li>
+          <li>Клик по нейтральной/вражеской клетке — атаковать.</li>
+          <li>Золото начисляется каждый тик за захваченные клетки.</li>
+          <li>Перед атакой действует таймер «Оправдание войны».</li>
+        </ul>
+        <button id="btnBackToMenu" class="btn btn-dark">НАЗАД</button>
       </div>
     </div>
   </section>
 
-  <!-- ЭКРАН: ПРАВИЛА -->
-  <section id="screen-help" class="screen hidden">
-    <div class="menu-card help-card">
-      <h2 class="game-title">Как играть</h2>
-      <ul class="help-list">
-        <li>Клик по своей клетке — выбрать её.</li>
-        <li>Клик по нейтральной/вражеской клетке — атаковать.</li>
-        <li>Золото начисляется каждый тик за захваченные клетки.</li>
-        <li>Перед атакой действует таймер «Оправдание войны».</li>
-        <li>Захватывай клетки и расширяй свою территорию.</li>
-      </ul>
-      <!-- Уникальный ID: btnBack -->
-      <button id="btnBack" class="btn btn-secondary" type="button">Назад</button>
-    </div>
-  </section>
-
-  <!-- ЭКРАН: ИГРА -->
+  <!-- ЭКРАН 3: ИГРА -->
   <section id="screen-game" class="screen hidden">
     <div class="game-layout">
       <header class="hud">
         <div class="hud-item">Золото: <span id="hudGold">0</span></div>
         <div class="hud-item">Тик: <span id="hudTick">0</span></div>
-        <div class="hud-item">Оправдание войны: <span id="hudWarTimer">0</span></div>
-        <button id="btnToMenu" class="btn btn-small btn-secondary" type="button">В меню</button>
+        <div class="hud-item">Оправдание: <span id="hudWarTimer">0</span></div>
+        <button id="btnExitGame" class="btn btn-small btn-dark">В ЛОББИ</button>
       </header>
-      <!-- Сетка 14x10 генерируется в game.js -->
       <div id="grid" class="grid" role="grid" aria-label="Игровое поле"></div>
     </div>
   </section>
 
-  <script src="game.js" defer></script>
+  <script src="game.js"></script>
 </body>
 </html>
