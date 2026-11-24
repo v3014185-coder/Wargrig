@@ -1,33 +1,28 @@
 /* =========================================================
-   WarGrid — Vanilla JS (UI в стиле TERRON)
+   WarGrid — Логика HOI4 + TERRON
    ========================================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
   try {
     initScreens();
-    initMenuButtons();
-    initGame();
-  } catch (err) {
-    console.error('Ошибка инициализации: ', err);
+    initButtons();
+    initGameField();
+  } catch (e) {
+    console.error("Ошибка инициализации: ", e);
   }
 });
-
-/* ---------------------------------------------------------
-   ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ
-   --------------------------------------------------------- */
 
 function show(screenId) {
   const target = document.getElementById(screenId);
   if (!target) {
-    console.error(`Ошибка переключения: элемент #${screenId} не найден.`);
+    console.error(`Элемент #${screenId} не найден`);
     return;
   }
-
-  const allScreens = document.querySelectorAll('.screen');
-  allScreens.forEach((scr) => {
+  
+  document.querySelectorAll('.screen').forEach(scr => {
     if (scr === target) {
       scr.classList.remove('hidden');
-      void scr.offsetWidth; // Форсируем reflow для анимации
+      void scr.offsetWidth;
       scr.style.opacity = '1';
     } else {
       scr.style.opacity = '0';
@@ -41,52 +36,25 @@ function initScreens() {
   if (menu) menu.classList.remove('hidden');
 }
 
-/* ---------------------------------------------------------
-   КНОПКИ (Защищенные обработчики)
-   --------------------------------------------------------- */
-
-function initMenuButtons() {
-  const bind = (id, handler) => {
-    const el = document.getElementById(id);
-    if (!el) {
-      console.error(`Ошибка инициализации кнопок: элемент #${id} не найден.`);
+function initButtons() {
+  // Защищенная привязка кнопок
+  const bind = (id, action) => {
+    const btn = document.getElementById(id);
+    if (!btn) {
+      console.error(`Кнопка #${id} не найдена`);
       return;
     }
-    el.addEventListener('click', handler);
+    btn.addEventListener('click', action);
   };
 
-  // Вход в игру (кнопка "ИГРАТЬ" в профиле)
-  bind('btnPlay', () => {
-    show('screen-game');
-    startGameLoopIfNeeded();
-  });
-
-  // Вход в игру (кнопка "ВОЙТИ" в карточке карты)
-  bind('btnEnterLobby', () => {
-    show('screen-game');
-    startGameLoopIfNeeded();
-  });
-
-  // Переход в правила
-  bind('btnHelp', () => {
-    show('screen-help');
-  });
-
-  // Из правил обратно в меню
-  bind('btnBackToMenu', () => {
-    show('screen-menu');
-  });
-
-  // Выход из игры в меню (Лобби)
-  bind('btnExitGame', () => {
-    show('screen-menu');
-  });
+  // Кнопки переходов
+  bind('btnEnterGame', () => { show('screen-game'); startGameLoop(); });
+  bind('btnHelp', () => show('screen-help'));
+  bind('btnBack', () => show('screen-menu'));
+  bind('btnExit', () => show('screen-menu'));
 }
 
-/* ---------------------------------------------------------
-   ИГРОВАЯ ЛОГИКА (Механика сохранена)
-   --------------------------------------------------------- */
-
+/* --- ИГРОВАЯ МЕХАНИКА --- */
 const CONFIG = {
   COLS: 14,
   ROWS: 10,
@@ -107,19 +75,17 @@ const state = {
 };
 
 const gridEl = () => document.getElementById('grid');
-const hudGoldEl = () => document.getElementById('hudGold');
-const hudTickEl = () => document.getElementById('hudTick');
-const hudWarEl = () => document.getElementById('hudWarTimer');
+const hudGold = () => document.getElementById('hudGold');
+const hudTick = () => document.getElementById('hudTick');
+const hudWar = () => document.getElementById('hudWarTimer');
 
-function initGame() {
+function initGameField() {
   buildGrid();
   seedInitialCells();
-  renderHud();
-
+  updateHud();
+  
   const grid = gridEl();
-  if (grid) {
-    grid.addEventListener('click', onGridClick);
-  }
+  if (grid) grid.addEventListener('click', onGridClick);
 }
 
 function buildGrid() {
@@ -165,26 +131,24 @@ function renderCells() {
     const node = nodes[i];
     if (!node) continue;
     const { owner } = state.cells[i];
-    node.classList.remove('neutral', 'player', 'enemy', 'selected');
-    node.classList.add(owner);
+    node.className = 'cell ' + owner; // Сбрасываем и ставим нужный класс
     if (state.selected === i) node.classList.add('selected');
   }
 }
 
-function renderHud() {
-  if (hudGoldEl()) hudGoldEl().textContent = String(state.gold);
-  if (hudTickEl()) hudTickEl().textContent = String(state.tick);
-  if (hudWarEl())  hudWarEl().textContent  = String(state.warTimer);
+function updateHud() {
+  if (hudGold()) hudGold().textContent = String(state.gold);
+  if (hudTick()) hudTick().textContent = String(state.tick);
+  if (hudWar())  hudWar().textContent  = String(state.warTimer);
 }
 
-function onGridClick(event) {
-  const target = event.target;
-  if (!(target instanceof HTMLElement) || !target.classList.contains('cell')) return;
+function onGridClick(e) {
+  const target = e.target;
+  if (!target.classList.contains('cell')) return;
 
   const idx = Number(target.dataset.index);
-  if (!Number.isInteger(idx) || idx < 0 || idx >= state.cells.length) return;
-
   const cell = state.cells[idx];
+  if (!cell) return;
 
   // Выбор своей клетки
   if (cell.owner === 'player') {
@@ -207,10 +171,10 @@ function onGridClick(event) {
 
   state.selected = null;
   renderCells();
-  renderHud();
+  updateHud();
 }
 
-function startGameLoopIfNeeded() {
+function startGameLoop() {
   if (state.loopStarted) return;
   state.loopStarted = true;
 
@@ -218,8 +182,13 @@ function startGameLoopIfNeeded() {
     state.tick += 1;
     let owned = 0;
     for (const c of state.cells) if (c.owner === 'player') owned += 1;
+    
+    // Формула экономики
     state.gold += owned * CONFIG.GOLD_PER_CELL;
+    
+    // Тик таймера
     if (state.warTimer > 0) state.warTimer -= 1;
-    renderHud();
+    
+    updateHud();
   }, CONFIG.TICK_MS);
 }
