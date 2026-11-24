@@ -4,38 +4,53 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WarGrid — Стратегия</title>
-  <link rel="stylesheet" href="style.css" />
+  <!-- Добавил версию к стилям, чтобы браузер не кэшировал старый дизайн -->
+  <link rel="stylesheet" href="style.css?v=2.0" />
+  <style>
+    /* Принудительные стили на случай, если style.css не загрузится */
+    body { background-color: #f2ebd9 !important; color: #1a1a1a !important; }
+  </style>
 </head>
 <body>
 
-  <!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ (в стиле TERRON) -->
+  <!-- ================= ГЛАВНЫЙ ЭКРАН (ЛОББИ) ================= -->
   <section id="screen-menu" class="screen active">
     <div class="menu-container">
+      
+      <!-- Шапка -->
       <header class="top-bar">
         <div class="logo">WARGRID</div>
         <div class="top-links">
           <a href="#" class="top-link">НОВОСТИ</a>
           <a href="#" class="top-link">МАГАЗИН</a>
           <a href="#" class="top-link">РЕЙТИНГ</a>
+          <a href="#" class="top-link">КЛАНЫ</a>
+          <a href="#" class="top-link">ДРУЗЬЯ</a>
         </div>
       </header>
 
+      <!-- Центральная панель -->
       <div class="main-panel">
+        
+        <!-- Профиль и Играть -->
         <div class="profile-row">
-          <span class="profile-icon">👤</span>
-          <span class="profile-name">ИГРОК</span>
-          <span class="profile-skin">СКИН</span>
+          <div class="profile-info">
+            <span class="profile-icon">👤</span>
+            <span class="profile-name">[TEF] Игрок</span>
+          </div>
+          <button id="btnPlay" class="btn btn-dark btn-play">ИГРАТЬ</button>
         </div>
 
+        <!-- Настройки игры -->
         <div class="game-settings-row">
-          <span class="setting-badge">FFA 9С</span>
+          <span class="setting-badge">FFA 9с</span>
           <span class="setting-badge gold">ЗОЛОТОЙ +2 ⏱ 9:14</span>
           <span class="setting-badge diamond">АЛМАЗНЫЙ +5 ⏱ 19:14</span>
         </div>
 
+        <!-- Карточка карты -->
         <div class="map-card">
           <div class="map-image">
-            <!-- Заглушка для карты -->
             <span class="map-label">КОМПАКТНАЯ КАРТА</span>
           </div>
           <div class="map-info">
@@ -47,19 +62,20 @@
           </div>
         </div>
 
+        <!-- Кнопки внизу -->
         <div class="action-row">
           <button class="btn btn-dark full-width">+ СОЗДАТЬ ЛОББИ</button>
           <button id="btnHelp" class="btn btn-light full-width">КАК ИГРАТЬ</button>
         </div>
       </div>
-      
+
       <footer class="footer">
         <span>WarGrid Alpha v1.0</span>
       </footer>
     </div>
   </section>
 
-  <!-- ЭКРАН 2: ПРАВИЛА -->
+  <!-- ================= ЭКРАН ПРАВИЛ ================= -->
   <section id="screen-help" class="screen hidden">
     <div class="menu-container center-content">
       <div class="help-card">
@@ -75,19 +91,19 @@
     </div>
   </section>
 
-  <!-- ЭКРАН 3: ИГРА -->
+  <!-- ================= ЭКРАН ИГРЫ ================= -->
   <section id="screen-game" class="screen hidden">
     <div class="game-layout">
       <header class="hud">
         <div class="hud-item">Золото: <span id="hudGold">0</span></div>
         <div class="hud-item">Тик: <span id="hudTick">0</span></div>
         <div class="hud-item">Оправдание: <span id="hudWarTimer">0</span></div>
-        <button id="btnExitGame" class="btn btn-small btn-dark">В ЛОББИ</button>
+        <button id="btnExitGame" class="btn btn-small btn-dark">В МЕНЮ</button>
       </header>
       <div id="grid" class="grid" role="grid" aria-label="Игровое поле"></div>
     </div>
   </section>
 
-  <script src="game.js"></script>
+  <script src="game.js?v=2.0"></script>
 </body>
 </html>
