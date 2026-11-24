@@ -1,76 +1,71 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WarGrid</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WarGrid - Стратегия</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- ГЛАВНОЕ МЕНЮ -->
-  <div id="menu" class="screen">
-    <div class="logo">WarGrid</div>
-    <div class="subtitle">Стратегия на сетке</div>
-    <button class="big" id="btnPlay">В БОЙ</button>
-    <button class="big ghost" id="btnHelp">Как играть</button>
-    <div class="menuver">v0.2 MVP</div>
-  </div>
+    <!-- ЭКРАН МЕНЮ -->
+    <div id="menu-screen" class="screen active">
+        <h1 class="title">WarGrid</h1>
+        <p class="subtitle">Стратегия на сетке v1.0</p>
+        
+        <div class="doctrine-container">
+            <h2>Выбери доктрину</h2>
+            <div class="doctrine-cards">
+                <div class="doctrine-card" data-doctrine="infantry">
+                    <h3>Пехотная школа</h3>
+                    <p>Пехота призывается на 40% быстрее.</p>
+                    <span class="badge">Дёшево и надёжно</span>
+                </div>
+                <div class="doctrine-card" data-doctrine="tank">
+                    <h3>Танковая школа</h3>
+                    <p>Танки дешевле (120 вместо 150).</p>
+                    <span class="badge">Тяжёлый прорыв</span>
+                </div>
+            </div>
+        </div>
 
-  <!-- ВЫБОР ДОКТРИНЫ -->
-  <div id="doctrines" class="screen hidden">
-    <div class="title">Выбери доктрину</div>
-    <div class="cards">
-      <div class="card" data-doc="inf">
-        <div class="cardname">Пехотная школа</div>
-        <div class="carddesc">Пехота призывается на 40% быстрее.<br>Дёшево и надёжно.</div>
-      </div>
-      <div class="card" data-doc="tank">
-        <div class="cardname">Танковая школа</div>
-        <div class="carddesc">Танки дешевле (120 вместо 150).<br>Тяжёлый прорыв обороны.</div>
-      </div>
+        <button id="start-btn" class="btn btn-primary" disabled>В БОЙ</button>
+        <button id="how-to-play-btn" class="btn btn-secondary">Как играть</button>
     </div>
-  </div>
 
-  <!-- ОБУЧЕНИЕ -->
-  <div id="help" class="screen hidden">
-    <div class="title">Как играть</div>
-    <ul class="rules">
-      <li>Каждая клетка приносит золото каждый тик. Столица (жёлтая рамка) — больше золота и призывает пехоту.</li>
-      <li>Нажми на клетку врага на границе и запусти «Оправдание войны». Пока идёт таймер — обе стороны получают +2% к доходу и призыву.</li>
-      <li>Когда таймер закончится — твои войска на границе атакуют клетку. У обороны бонус ×1,5.</li>
-      <li>Танк сильнее пехоты в 4 раза, но дорог.</li>
-      <li>Побеждает тот, кто захватит столицу врага.</li>
-    </ul>
-    <button class="big ghost" id="btnBack">Назад</button>
-  </div>
+    <!-- ЭКРАН ИГРЫ -->
+    <div id="game-screen" class="screen">
+        <header class="hud">
+            <div class="hud-stats">
+                <span id="gold-display">Золото: 0</span>
+                <span id="infantry-display">Пехота: 0</span>
+                <span id="tank-display">Танки: 0</span>
+            </div>
+            <div class="hud-actions">
+                <button id="buy-infantry" class="btn btn-small">Купить пехоту (50)</button>
+                <button id="buy-tank" class="btn btn-small">Купить танк (150)</button>
+            </div>
+        </header>
 
-  <!-- ИГРА -->
-  <div id="game" class="screen hidden">
-    <div id="topbar">
-      <div class="res">💰 <b id="gold">0</b></div>
-      <div class="res">🪖 <b id="troops">0</b></div>
-      <div class="res">🚜 <b id="tanks">0</b></div>
-      <div class="res enemy">Враг: 🪖 <b id="eTroops">0</b></div>
+        <div id="status-message" class="status-message">Выбери клетку врага на границе и оправдай войну.</div>
+
+        <main class="grid-container">
+            <div id="game-grid" class="grid"></div>
+        </main>
+
+        <div id="timer-overlay" class="hidden">
+            <h2>Оправдание войны!</h2>
+            <div id="timer-display">0.0s</div>
+        </div>
     </div>
-    <canvas id="map"></canvas>
-    <div id="controls">
-      <button id="buyInf">Пехота (50)</button>
-      <button id="buyTank">Танк (150)</button>
-      <button id="justifyBtn" disabled>Оправдать войну</button>
+
+    <!-- ЭКРАН ПОБЕДЫ/ПОРАЖЕНИЯ -->
+    <div id="game-over-screen" class="screen">
+        <h1 id="game-over-title">Победа!</h1>
+        <p id="game-over-text">Вражеская столица захвачена.</p>
+        <button id="restart-btn" class="btn btn-primary">Играть снова</button>
     </div>
-    <div id="status">Выбери клетку врага на границе.</div>
-  </div>
 
-  <!-- ЭКРАН ПОБЕДЫ/ПОРАЖЕНИЯ -->
-  <div id="end" class="screen hidden">
-    <div class="logo" id="endTitle">Победа!</div>
-    <div class="subtitle" id="endDesc"></div>
-    <button class="big" id="btnRestart">В главное меню</button>
-  </div>
-
-  <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
-  <script>if (window.vkBridge) { vkBridge.send('VKWebAppInit', {}); }</script>
-  <script src="game.js"></script>
+    <script src="game.js"></script>
 </body>
 </html>
