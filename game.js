@@ -1,257 +1,457 @@
-// ===== WarGrid v0.2 =====
-const COLS = 14, ROWS = 10, CELL = 44;
-const canvas = document.getElementById('map');
-const ctx = canvas.getContext('2d');
-canvas.width = COLS * CELL;
-canvas.height = ROWS * CELL;
-
-const P = 1, B = 2;
-const idx = (x, y) => y * COLS + x;
-const xy = (i) => [i % COLS, Math.floor(i / COLS)];
-
-const INF_COST = 50, TANK_COST = 150, TANK_STRENGTH = 4;
-let infRecruitSec = 5; // ускоряется доктриной
-
-const screens = {
-  menu: document.getElementById('menu'),
-  doctrines: document.getElementById('doctrines'),
-  help: document.getElementById('help'),
-  game: document.getElementById('game'),
-  end: document.getElementById('end'),
-};
-const show = (name) => {
-  Object.keys(screens).forEach(k => screens[k].classList.toggle('hidden', k !== name));
-};
-
-let state = null; // инициализируется при старте партии
-const bot = { gold: 100, recruitTimer: 0, justTimer: 0, target: -1, doc: 'inf' };
-
-const el = {
-  gold: document.getElementById('gold'), troops: document.getElementById('troops'),
-  tanks: document.getElementById('tanks'), eTroops: document.getElementById('eTroops'),
-  status: document.getElementById('status'),
-  buyInf: document.getElementById('buyInf'), buyTank: document.getElementById('buyTank'),
-  justifyBtn: document.getElementById('justifyBtn'),
-};
-
-const neighbors = (i) => {
-  const [x, y] = xy(i); const r = [];
-  if (x > 0) r.push(idx(x - 1, y));
-  if (x < COLS - 1) r.push(idx(x + 1, y));
-  if (y > 0) r.push(idx(x, y - 1));
-  if (y < ROWS - 1) r.push(idx(x, y + 1));
-  return r;
-};
-const cellStrength = (c) => c.troops + c.tanks * TANK_STRENGTH;
-const isAdjToEnemy = (i, o) => neighbors(i).some(n => cells[n].owner !== 0 && cells[n].owner !== o);
-const capitalOf = (o) => cells.findIndex(c => c.owner === o && c.capital);
-const sideStats = (o) => cells.reduce((acc, c) => {
-  if (c.owner === o) { acc.troops += c.troops; acc.tanks += c.tanks; }
-  return acc;
-}, { troops: 0, tanks: 0 });
-
-let cells = [];
-function startGame(doc) {
-  infRecruitSec = (doc === 'inf') ? 3.5 : 5;
-  bot.doc = doc === 'inf' ? 'tank' : 'inf';
-  cells = [];
-  for (let i = 0; i < COLS * ROWS; i++) cells.push({ owner: 0, troops: 0, tanks: 0, capital: false });
-  cells[idx(2, 5)] = { owner: P, troops: 5, tanks: 0, capital: true };
-  cells[idx(11, 5)] = { owner: B, troops: 5, tanks: 0, capital: true };
-  state = {
-    gold: 100, selected: -1, justification: null,
-    recruitTimer: 0, over: false,
-  };
-  bot.gold = 100; bot.recruitTimer = 0; bot.justTimer = 0; bot.target = -1;
-  el.status.textContent = 'Доктрина: ' + (doc === 'inf' ? 'пехотная' : 'танковая');
-  show('game');
-}
-
-// ===== Экономика =====
-setInterval(() => {
-  if (!state || state.over) return;
-  const buff = (state.justification || bot.justTimer > 0) ? 1.02 : 1; // +2% при оправдании
-  const mine = cells.filter(c => c.owner === P).length;
-  const enemy = cells.filter(c => c.owner === B).length;
-  state.gold += Math.round((mine + 2) * buff);
-  bot.gold += Math.round((enemy + 2) * buff);
-
-  // Призыв пехоты в столицу
-  state.recruitTimer += buff;
-  if (state.recruitTimer >= infRecruitSec) {
-    state.recruitTimer = 0;
-    const c = capitalOf(P); if (c >= 0) cells[c].troops++;
-  }
-  const botRate = bot.doc === 'inf' ? 3.5 : 5;
-  bot.recruitTimer += buff;
-  if (bot.recruitTimer >= botRate) {
-    bot.recruitTimer = 0;
-    const c = capitalOf(B); if (c >= 0) cells[c].troops++;
-  }
-}, 1000);
-
-// ===== Оправдание войны =====
-el.justifyBtn.onclick = () => {
-  const t = state.selected;
-  if (t < 0 || cells[t].owner !== B || !isAdjToEnemy(t, P)) return;
-  state.justification = { target: t, timeLeft: 15 };
-  el.justifyBtn.disabled = true;
-  el.status.textContent = 'Таймер пошёл: обе стороны фармят на +2% быстрее!';
-};
-
-el.buyInf.onclick = () => {
-  if (!state || state.over || state.gold < INF_COST) return;
-  state.gold -= INF_COST;
-  const c = capitalOf(P); if (c >= 0) cells[c].troops++;
-};
-el.buyTank.onclick = () => {
-  const cost = document.querySelector('.card[data-doc="tank"]') && false ? 0 : (infRecruitSec === 5 ? 150 : 150);
-  const tankCost = (tankDoc) ? TANK_COST - 30 : TANK_COST;
-  if (!state || state.over || state.gold < tankCost) return;
-  state.gold -= tankCost;
-  const c = capitalOf(P); if (c >= 0) cells[c].tanks++;
-};
-// доктрина игрока
-let tankDoc = false;
-function pickDoc(doc) {
-  tankDoc = (doc === 'tank');
-  el.buyTank.textContent = tankDoc ? 'Танк (120)' : 'Танк (150)';
-  startGame(doc);
-}
-document.querySelectorAll('.card').forEach(card =>
-  card.addEventListener('click', () => pickDoc(card.dataset.doc)));
-
-function resolveAttack(attOwner, target) {
-  const atkCells = neighbors(target).filter(n => cells[n].owner === attOwner);
-  const atk = atkCells.reduce((s, n) => s + cellStrength(cells[n]), 0) * 10;
-  const def = cellStrength(cells[target]) * 10 * 1.5 + 20;
-  const name = attOwner === P ? 'Ты' : 'Германия';
-
-  if (atk > def) {
-    const prevOwner = cells[target].owner;
-    cells[target] = {
-      owner: attOwner,
-      troops: Math.floor((atk - def) / 10),
-      tanks: 0, capital: cells[target].capital,
+/**
+ * WarGrid v1.0 - Game Logic
+ * Senior Frontend & Game Design
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    // --- КОНСТАНТЫ И КОНФИГУРАЦИЯ ---
+    const CONFIG = {
+        GRID_W: 14,
+        GRID_H: 10,
+        START_GOLD: 60,
+        START_INF: 11,
+        START_TANKS: 0,
+        COST_INF: 50,
+        COST_TANK: 150,
+        TICK_RATE: 1000, // 1 секунда = 1 тик
+        CAPITAL_BONUS_GOLD: 10,
+        CELL_GOLD: 1,
+        WAR_JUSTIFICATION_TIME: 10000, // 10 секунд
     };
-    atkCells.forEach(n => { cells[n].troops = Math.ceil(cells[n].troops / 2); cells[n].tanks = Math.ceil(cells[n].tanks / 2); });
-    el.status.textContent = `${name} захватили клетку!`;
-    if (cells[target].capital && prevOwner !== attOwner) endGame(attOwner === P);
-  } else {
-    cells[target].troops = Math.max(1, Math.ceil((def - atk) / 10 / 1.5));
-    atkCells.forEach(n => { cells[n].troops = Math.ceil(cells[n].troops / 2); cells[n].tanks = Math.ceil(cells[n].tanks / 2); });
-    el.status.textContent = `Атака ${attOwner === P ? 'отбита' : 'врага отбита'}!`;
-  }
-  state.justification = null;
-  el.justifyBtn.disabled = true;
-  state.selected = -1;
-}
 
-setInterval(() => {
-  if (!state || state.over) return;
-  if (state.justification) {
-    state.justification.timeLeft--;
-    el.status.textContent = 'Оправдание войны: ' + state.justification.timeLeft + ' сек...';
-    if (state.justification.timeLeft <= 0) resolveAttack(P, state.justification.target);
-  }
-  if (bot.justTimer > 0) {
-    bot.justTimer--;
-    if (bot.justTimer <= 0 && bot.target >= 0) resolveAttack(B, bot.target);
-  }
-}, 1000);
+    // --- СОСТОЯНИЕ ИГРЫ ---
+    let state = {
+        gold: CONFIG.START_GOLD,
+        infantry: CONFIG.START_INF,
+        tanks: CONFIG.START_TANKS,
+        doctrine: 'infantry',
+        isGameOver: false,
+        selectedCell: null,
+        timer: null,
+        tickInterval: null,
+        grid: [], // Массив объектов { x, y, owner, isCapital, infantry, tanks }
+    };
 
-// ===== ИИ =====
-setInterval(() => {
-  if (!state || state.over) return;
-  // Бот тратит золото
-  const botCap = capitalOf(B);
-  if (botCap >= 0) {
-    if (bot.gold >= 150 && Math.random() < 0.3) { bot.gold -= 150; cells[botCap].tanks++; }
-    else if (bot.gold >= 50) { bot.gold -= 50; cells[botCap].troops++; }
-  }
-  // Бот решает атаковать
-  if (bot.justTimer > 0 || bot.target >= 0) return;
-  const border = cells.map((c, i) => ({ c, i })).filter(x => x.c.owner === B && isAdjToEnemy(x.i, B));
-  for (const { c, i } of border) {
-    const targets = neighbors(i).filter(n => cells[n].owner === P);
-    for (const n of targets) {
-      if (c.troops >= cells[n].troops + 4) {
-        bot.target = n; bot.justTimer = 5;
-        el.status.textContent = '⚠ Германия оправдывает войну! Усиль границу!';
-        return;
-      }
+    // --- DOM ЭЛЕМЕНТЫ ---
+    const DOM = {
+        menuScreen: document.getElementById('menu-screen'),
+        gameScreen: document.getElementById('game-screen'),
+        gameOverScreen: document.getElementById('game-over-screen'),
+        grid: document.getElementById('game-grid'),
+        goldDisplay: document.getElementById('gold-display'),
+        infDisplay: document.getElementById('infantry-display'),
+        tankDisplay: document.getElementById('tank-display'),
+        buyInfBtn: document.getElementById('buy-infantry'),
+        buyTankBtn: document.getElementById('buy-tank'),
+        startBtn: document.getElementById('start-btn'),
+        restartBtn: document.getElementById('restart-btn'),
+        statusMsg: document.getElementById('status-message'),
+        timerOverlay: document.getElementById('timer-overlay'),
+        timerDisplay: document.getElementById('timer-display'),
+        gameOverTitle: document.getElementById('game-over-title'),
+        gameOverText: document.getElementById('game-over-text'),
+    };
+
+    // --- ИНИЦИАЛИЗАЦИЯ ---
+    function init() {
+        try {
+            setupMenuListeners();
+            initGrid();
+            startGameLoop();
+            render();
+        } catch (e) {
+            console.error("Критическая ошибка при инициализации:", e);
+            alert("Произошла ошибка. Проверьте консоль.");
+        }
     }
-  }
-}, 5000);
 
-// ===== Ввод (с учётом масштаба экрана) =====
-canvas.addEventListener('click', (e) => {
-  if (!state || state.over) return;
-  const r = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / r.width, scaleY = canvas.height / r.height;
-  const x = Math.floor((e.clientX - r.left) * scaleX / CELL);
-  const y = Math.floor((e.clientY - r.top) * scaleY / CELL);
-  if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return;
-  const i = idx(x, y);
-  if (cells[i].owner === B && isAdjToEnemy(i, P)) {
-    state.selected = i;
-    el.justifyBtn.disabled = false;
-    el.status.textContent = 'Клетка выбрана. Жми «Оправдать войну».';
-  } else {
-    state.selected = -1;
-    el.justifyBtn.disabled = true;
-  }
+    // --- ИНИЦИАЛИЗАЦИЯ СЕТКИ ---
+    function initGrid() {
+        state.grid = [];
+        DOM.grid.innerHTML = '';
+        
+        for (let y = 0; y < CONFIG.GRID_H; y++) {
+            for (let x = 0; x < CONFIG.GRID_W; x++) {
+                // Игрок слева (x < 3), Враг справа (x > 10)
+                let owner = 'neutral';
+                let isCapital = false;
+
+                if (x < 3) owner = 'player';
+                if (x > 10) owner = 'enemy';
+
+                // Столицы
+                if (x === 0 && y === 4) { owner = 'player'; isCapital = true; }
+                if (x === 13 && y === 5) { owner = 'enemy'; isCapital = true; }
+
+                const cell = { x, y, owner, isCapital, infantry: 0, tanks: 0 };
+                
+                // Начальные войска
+                if (owner === 'player') { cell.infantry = 5; }
+                if (owner === 'enemy') { cell.infantry = 5; }
+
+                state.grid.push(cell);
+            }
+        }
+
+        // Генерация DOM
+        state.grid.forEach((cellData, index) => {
+            const cellEl = document.createElement('div');
+            cellEl.className = 'cell';
+            cellEl.dataset.index = index;
+            cellEl.id = `cell-${index}`;
+            DOM.grid.appendChild(cellEl);
+        });
+
+        // Делегирование событий для сетки
+        DOM.grid.addEventListener('click', (e) => {
+            const cellEl = e.target.closest('.cell');
+            if (!cellEl) return;
+            handleCellClick(parseInt(cellEl.dataset.index));
+        });
+    }
+
+    // --- МЕНЮ И ОБРАБОТЧИКИ ---
+    function setupMenuListeners() {
+        // Выбор доктрины (делегирование)
+        document.querySelector('.doctrine-cards').addEventListener('click', (e) => {
+            const card = e.target.closest('.doctrine-card');
+            if (!card) return;
+            
+            document.querySelectorAll('.doctrine-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            state.doctrine = card.dataset.doctrine;
+            DOM.startBtn.disabled = false;
+        });
+
+        DOM.startBtn.addEventListener('click', () => {
+            DOM.menuScreen.classList.remove('active');
+            DOM.gameScreen.classList.add('active');
+            updateStatus("Выбери клетку врага на границе и оправдай войну.");
+            render();
+        });
+
+        // Покупка юнитов
+        DOM.buyInfBtn.addEventListener('click', () => buyUnit('infantry'));
+        DOM.buyTankBtn.addEventListener('click', () => buyUnit('tank'));
+
+        // Рестарт
+        DOM.restartBtn.addEventListener('click', () => {
+            window.location.reload(); // Самый надежный способ сбросить всё
+        });
+    }
+
+    // --- ИГРОВАЯ ЛОГИКА ---
+    function buyUnit(type) {
+        if (state.isGameOver) return;
+        
+        const cost = type === 'infantry' ? CONFIG.COST_INF : CONFIG.COST_TANK;
+        if (state.gold >= cost) {
+            state.gold -= cost;
+            if (type === 'infantry') state.infantry += 1;
+            else state.tanks += 1;
+            render();
+        } else {
+            flashStatus("Недостаточно золота!", "var(--danger)");
+        }
+    }
+
+    function handleCellClick(index) {
+        if (state.isGameOver || state.timer) return;
+        
+        const cell = state.grid[index];
+        const isBorder = cell.owner === 'enemy' && checkIfBorder(cell.x, cell.y);
+
+        // Если кликнули по своей клетке - выделяем
+        if (cell.owner === 'player') {
+            if (state.selectedCell !== null) {
+                document.getElementById(`cell-${state.selectedCell}`).classList.remove('selected-cell');
+            }
+            state.selectedCell = index;
+            document.getElementById(`cell-${index}`).classList.add('selected-cell');
+            updateStatus("Выбрана своя клетка. Нажми на границу врага для атаки.");
+            return;
+        }
+
+        // Если кликнули по врагу на границе - атака
+        if (isBorder) {
+            if (state.infantry === 0 && state.tanks === 0) {
+                flashStatus("У вас нет войск для атаки!", "var(--danger)");
+                return;
+            }
+            startWarJustification(cell);
+        }
+    }
+
+    // Проверка, является ли клетка граничной (есть сосед-игрок)
+    function checkIfBorder(x, y) {
+        const neighbors = [
+            {x: x+1, y}, {x: x-1, y}, {x, y: y+1}, {x, y: y-1}
+        ];
+        return neighbors.some(n => {
+            const neighbor = state.grid.find(c => c.x === n.x && c.y === n.y);
+            return neighbor && neighbor.owner === 'player';
+        });
+    }
+
+    // Механика "Оправдание войны"
+    function startWarJustification(targetCell) {
+        state.timer = true;
+        DOM.timerOverlay.classList.remove('hidden');
+        updateStatus("Идёт оправдание войны. Обе стороны получают +2% к доходу.");
+        
+        let timeLeft = CONFIG.WAR_JUSTIFICATION_TIME / 1000;
+        DOM.timerDisplay.textContent = `${timeLeft.toFixed(1)}s`;
+
+        const timerInterval = setInterval(() => {
+            timeLeft -= 0.1;
+            DOM.timerDisplay.textContent = `${Math.max(0, timeLeft).toFixed(1)}s`;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                DOM.timerOverlay.classList.add('hidden');
+                executeAttack(targetCell);
+            }
+        }, 100);
+    }
+
+    // Сама атака
+    function executeAttack(targetCell) {
+        state.timer = false;
+        
+        // Расчет силы
+        const attackPower = state.infantry * 1 + state.tanks * 4;
+        const defensePower = (targetCell.infantry * 1 + targetCell.tanks * 4) * 1.5; // Бонус обороны x1.5
+
+        const cellEl = document.getElementById(`cell-${state.grid.indexOf(targetCell)}`);
+        cellEl.classList.add('attacked');
+
+        // Анимация тряски
+        setTimeout(() => {
+            cellEl.classList.remove('attacked');
+
+            if (attackPower > defensePower) {
+                // Победа
+                targetCell.owner = 'player';
+                targetCell.infantry = Math.max(1, Math.floor((attackPower - defensePower) / 2)); // Остатки войск
+                targetCell.tanks = 0;
+                
+                // Обнуляем свои войска (упрощенно)
+                state.infantry = 0;
+                state.tanks = 0;
+
+                cellEl.classList.add('captured');
+                flashStatus("Победа! Клетка захвачена.", "var(--success)");
+
+                // Проверка на победу
+                if (targetCell.isCapital) {
+                    endGame(true);
+                }
+            } else {
+                // Поражение
+                flashStatus("Атака провалилась! Вражеская оборона слишком сильна.", "var(--danger)");
+                // Враг теряет часть войск
+                targetCell.infantry = Math.max(0, targetCell.infantry - Math.floor(attackPower / 4));
+                // Наши войска гибнут
+                state.infantry = Math.floor(state.infantry / 2);
+                state.tanks = 0;
+                cellEl.classList.add('lost');
+            }
+
+            render();
+        }, 500);
+    }
+
+    // --- ИИ БОТА ---
+    function botTurn() {
+        if (state.isGameOver || state.timer) return;
+
+        // 1. Бот копит золото
+        // 2. Бот оценивает свою силу и силу игрока
+        const enemyCells = state.grid.filter(c => c.owner === 'enemy');
+        let totalEnemyPower = enemyCells.reduce((sum, c) => sum + c.infantry + c.tanks * 4, 0);
+        
+        // Бот покупает войска, если у него достаточно золота
+        // (У бота бесконечное золото для простоты, но он копит "силу")
+        if (totalEnemyPower < 50) {
+            // Спамим пехотой, если слабы
+            enemyCells.forEach(c => {
+                if (Math.random() > 0.7) c.infantry += 2;
+            });
+        } else {
+            // Копим на танки в столице
+            const capital = enemyCells.find(c => c.isCapital);
+            if (capital && Math.random() > 0.8) capital.tanks += 1;
+        }
+
+        // 3. Бот ищет цель для атаки
+        const borderTargets = state.grid.filter(c => 
+            c.owner === 'player' && checkIfBorderForEnemy(c.x, c.y)
+        );
+
+        if (borderTargets.length > 0) {
+            // Находим самую слабую цель
+            const target = borderTargets.reduce((weakest, current) => {
+                const currentPower = current.infantry + current.tanks * 4;
+                const weakestPower = weakest.infantry + weakest.tanks * 4;
+                return currentPower < weakestPower ? current : weakest;
+            });
+
+            const targetPower = (target.infantry + target.tanks * 4) * 1.5;
+            
+            // Бот атакует ТОЛЬКО если у него преимущество в 2 раза
+            // Или если игрок сам начал войну (упрощенно: если у игрока мало войск)
+            const enemyPowerNearTarget = enemyCells
+                .filter(c => Math.abs(c.x - target.x) <= 2 && Math.abs(c.y - target.y) <= 2)
+                .reduce((sum, c) => sum + c.infantry + c.tanks * 4, 0);
+
+            if (enemyPowerNearTarget > targetPower * 2.0) {
+                // Бот атакует!
+                updateStatus("Враг готовит наступление!");
+                
+                setTimeout(() => {
+                    if (state.isGameOver) return;
+                    const cellEl = document.getElementById(`cell-${state.grid.indexOf(target)}`);
+                    cellEl.classList.add('attacked');
+                    
+                    setTimeout(() => {
+                        cellEl.classList.remove('attacked');
+                        // Логика атаки бота (упрощенная)
+                        if (enemyPowerNearTarget > targetPower) {
+                            target.owner = 'enemy';
+                            target.infantry = Math.floor(enemyPowerNearTarget / 4);
+                            target.tanks = 0;
+                            cellEl.classList.add('lost');
+                            flashStatus("Враг захватил вашу клетку!", "var(--danger)");
+                            
+                            // Проверка на поражение
+                            if (target.isCapital) {
+                                endGame(false);
+                            }
+                        } else {
+                            flashStatus("Вы отбили атаку врага!", "var(--success)");
+                        }
+                        render();
+                    }, 500);
+                }, 1000);
+            }
+        }
+    }
+
+    function checkIfBorderForEnemy(x, y) {
+        const neighbors = [
+            {x: x+1, y}, {x: x-1, y}, {x, y: y+1}, {x, y: y-1}
+        ];
+        return neighbors.some(n => {
+            const neighbor = state.grid.find(c => c.x === n.x && c.y === n.y);
+            return neighbor && neighbor.owner === 'enemy';
+        });
+    }
+
+    // --- ИГРОВОЙ ЦИКЛ ---
+    function startGameLoop() {
+        state.tickInterval = setInterval(() => {
+            try {
+                if (state.isGameOver || state.timer) return;
+
+                // Доход
+                let income = 0;
+                state.grid.forEach(c => {
+                    if (c.owner === 'player') {
+                        income += CONFIG.CELL_GOLD;
+                        if (c.isCapital) income += CONFIG.CAPITAL_BONUS_GOLD;
+                    }
+                });
+
+                // Буст во время войны
+                if (state.timer) income *= 1.02;
+
+                state.gold += income;
+                
+                // Призыв пехоты (только в столице)
+                const capital = state.grid.find(c => c.owner === 'player' && c.isCapital);
+                if (capital) {
+                    let summonRate = 1;
+                    if (state.doctrine === 'infantry') summonRate *= 1.4;
+                    if (state.timer) summonRate *= 1.02;
+                    
+                    if (Math.random() < 0.1 * summonRate) { // Шанс призыва
+                        state.infantry += 1;
+                    }
+                }
+
+                // Ход бота (раз в 3 тика)
+                if (Math.random() < 0.33) {
+                    botTurn();
+                }
+
+                render();
+            } catch (e) {
+                console.error("Ошибка в игровом цикле:", e);
+            }
+        }, CONFIG.TICK_RATE);
+    }
+
+    // --- РЕНДЕР ---
+    function render() {
+        // Обновление HUD
+        DOM.goldDisplay.textContent = `Золото: ${Math.floor(state.gold)}`;
+        DOM.infDisplay.textContent = `Пехота: ${state.infantry}`;
+        DOM.tankDisplay.textContent = `Танки: ${state.tanks}`;
+
+        // Блокировка кнопок
+        DOM.buyInfBtn.disabled = state.gold < CONFIG.COST_INF;
+        DOM.buyTankBtn.disabled = state.gold < CONFIG.COST_TANK;
+
+        // Отрисовка сетки
+        state.grid.forEach((cell, index) => {
+            const el = document.getElementById(`cell-${index}`);
+            if (!el) return;
+
+            el.className = 'cell'; // Сброс классов
+            if (cell.owner === 'player') el.classList.add('player-territory');
+            if (cell.owner === 'enemy') el.classList.add('enemy-territory');
+            if (cell.isCapital) el.classList.add('capital');
+
+            // Подсветка границы для атаки
+            if (cell.owner === 'enemy' && checkIfBorder(cell.x, cell.y)) {
+                el.classList.add('selectable');
+            }
+
+            // Текст в клетке (кол-во войск)
+            const troops = cell.infantry + cell.tanks;
+            if (troops > 0) {
+                el.textContent = troops;
+            } else {
+                el.textContent = '';
+            }
+        });
+    }
+
+    // --- УТИЛИТЫ ---
+    function updateStatus(msg) {
+        DOM.statusMsg.textContent = msg;
+        DOM.statusMsg.style.color = '#aaa';
+    }
+
+    function flashStatus(msg, color) {
+        DOM.statusMsg.textContent = msg;
+        DOM.statusMsg.style.color = color;
+        setTimeout(() => {
+            DOM.statusMsg.style.color = '#aaa';
+        }, 2000);
+    }
+
+    function endGame(isVictory) {
+        state.isGameOver = true;
+        clearInterval(state.tickInterval);
+        
+        DOM.gameScreen.classList.remove('active');
+        DOM.gameOverScreen.classList.add('active');
+        
+        DOM.gameOverTitle.textContent = isVictory ? "Победа!" : "Поражение...";
+        DOM.gameOverTitle.style.color = isVictory ? "var(--success)" : "var(--danger)";
+        DOM.gameOverText.textContent = isVictory ? "Вы захватили столицу врага!" : "Ваша столица пала.";
+    }
+
+    // Запуск
+    init();
 });
-
-// ===== Конец партии =====
-function endGame(win) {
-  state.over = true;
-  document.getElementById('endTitle').textContent = win ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ';
-  document.getElementById('endDesc').textContent = win
-    ? 'Столица Германии захвачена. Рейх пал.'
-    : 'Твоя столица пала. Германия торжествует.';
-  show('end');
-}
-document.getElementById('btnRestart').onclick = () => show('menu');
-
-// ===== Меню =====
-document.getElementById('btnPlay').onclick = () => show('doctrines');
-document.getElementById('btnHelp').onclick = () => show('help');
-document.getElementById('btnBack').onclick = () => show('menu');
-
-// ===== Отрисовка =====
-const COLORS = { 0: '#2b2b30', [P]: '#a83232', [B]: '#5a5a6e' };
-function draw() {
-  if (!screens.game.classList.contains('hidden') && state) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i < cells.length; i++) {
-      const [x, y] = xy(i); const c = cells[i];
-      ctx.fillStyle = COLORS[c.owner];
-      ctx.fillRect(x * CELL, y * CELL, CELL - 2, CELL - 2);
-      if (c.capital) {
-        ctx.strokeStyle = '#ffd76e'; ctx.lineWidth = 2;
-        ctx.strokeRect(x * CELL + 2, y * CELL + 2, CELL - 6, CELL - 6);
-      }
-      if (c.troops > 0 || c.tanks > 0) {
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 13px Arial'; ctx.textAlign = 'center';
-        const s = c.troops + (c.tanks > 0 ? '+' + c.tanks + 'T' : '');
-        ctx.fillText(s, x * CELL + CELL / 2 - 1, y * CELL + CELL / 2 + 4);
-      }
-      if (i === state.selected) {
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
-        ctx.strokeRect(x * CELL, y * CELL, CELL - 2, CELL - 2);
-      }
-      if (state.justification && state.justification.target === i) {
-        ctx.strokeStyle = '#ffd76e'; ctx.lineWidth = 3;
-        ctx.strokeRect(x * CELL, y * CELL, CELL - 2, CELL - 2);
-      }
-    }
-    const s = sideStats(P), e = sideStats(B);
-    el.gold.textContent = state.gold;
-    el.troops.textContent = s.troops;
-    el.tanks.textContent = s.tanks;
-    el.eTroops.textContent = e.troops;
-  }
-  requestAnimationFrame(draw);
-}
-draw();
