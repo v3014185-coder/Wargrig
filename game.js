@@ -1,5 +1,5 @@
 /**
- * WarGrid v1.0 - Game Logic
+ * WarGrid v1.0 - Game Logic (Fixed & Improved)
  * Senior Frontend & Game Design
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         TICK_RATE: 1000, // 1 секунда = 1 тик
         CAPITAL_BONUS_GOLD: 10,
         CELL_GOLD: 1,
-        WAR_JUSTIFICATION_TIME: 10000, // 10 секунд
+        WAR_JUSTIFICATION_TIME: 5000, // Уменьшил до 5 сек, чтобы не скучать
     };
 
     // --- СОСТОЯНИЕ ИГРЫ ---
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.startBtn.addEventListener('click', () => {
             DOM.menuScreen.classList.remove('active');
             DOM.gameScreen.classList.add('active');
-            updateStatus("Выбери клетку врага на границе и оправдай войну.");
+            updateStatus("Кликни по красной клетке на границе, чтобы атаковать.");
             render();
         });
 
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Рестарт
         DOM.restartBtn.addEventListener('click', () => {
-            window.location.reload(); // Самый надежный способ сбросить всё
+            window.location.reload();
         });
     }
 
@@ -163,21 +163,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // Если кликнули по своей клетке - выделяем
         if (cell.owner === 'player') {
             if (state.selectedCell !== null) {
-                document.getElementById(`cell-${state.selectedCell}`).classList.remove('selected-cell');
+                const oldEl = document.getElementById(`cell-${state.selectedCell}`);
+                if (oldEl) oldEl.classList.remove('selected-cell');
             }
             state.selectedCell = index;
             document.getElementById(`cell-${index}`).classList.add('selected-cell');
-            updateStatus("Выбрана своя клетка. Нажми на границу врага для атаки.");
+            updateStatus("Выбрана своя клетка. Теперь нажми на красную границу врага для атаки.");
             return;
         }
 
         // Если кликнули по врагу на границе - атака
         if (isBorder) {
             if (state.infantry === 0 && state.tanks === 0) {
-                flashStatus("У вас нет войск для атаки!", "var(--danger)");
+                flashStatus("У вас нет войск для атаки! Купите их в панели сверху.", "var(--danger)");
                 return;
             }
             startWarJustification(cell);
+        } else {
+            updateStatus("Атаковать можно только клетки на границе с вашей территорией.");
         }
     }
 
@@ -231,26 +234,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (attackPower > defensePower) {
                 // Победа
                 targetCell.owner = 'player';
-                targetCell.infantry = Math.max(1, Math.floor((attackPower - defensePower) / 2)); // Остатки войск
+                targetCell.infantry = Math.max(1, Math.floor((attackPower - defensePower) / 2)); 
                 targetCell.tanks = 0;
                 
-                // Обнуляем свои войска (упрощенно)
+                // Обнуляем свои войска
                 state.infantry = 0;
                 state.tanks = 0;
 
                 cellEl.classList.add('captured');
                 flashStatus("Победа! Клетка захвачена.", "var(--success)");
 
-                // Проверка на победу
                 if (targetCell.isCapital) {
                     endGame(true);
                 }
             } else {
                 // Поражение
                 flashStatus("Атака провалилась! Вражеская оборона слишком сильна.", "var(--danger)");
-                // Враг теряет часть войск
                 targetCell.infantry = Math.max(0, targetCell.infantry - Math.floor(attackPower / 4));
-                // Наши войска гибнут
                 state.infantry = Math.floor(state.infantry / 2);
                 state.tanks = 0;
                 cellEl.classList.add('lost');
@@ -264,31 +264,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function botTurn() {
         if (state.isGameOver || state.timer) return;
 
-        // 1. Бот копит золото
-        // 2. Бот оценивает свою силу и силу игрока
         const enemyCells = state.grid.filter(c => c.owner === 'enemy');
         let totalEnemyPower = enemyCells.reduce((sum, c) => sum + c.infantry + c.tanks * 4, 0);
         
-        // Бот покупает войска, если у него достаточно золота
-        // (У бота бесконечное золото для простоты, но он копит "силу")
+        // Бот копит силы
         if (totalEnemyPower < 50) {
-            // Спамим пехотой, если слабы
             enemyCells.forEach(c => {
                 if (Math.random() > 0.7) c.infantry += 2;
             });
         } else {
-            // Копим на танки в столице
             const capital = enemyCells.find(c => c.isCapital);
             if (capital && Math.random() > 0.8) capital.tanks += 1;
         }
 
-        // 3. Бот ищет цель для атаки
+        // Бот ищет цель
         const borderTargets = state.grid.filter(c => 
             c.owner === 'player' && checkIfBorderForEnemy(c.x, c.y)
         );
 
         if (borderTargets.length > 0) {
-            // Находим самую слабую цель
             const target = borderTargets.reduce((weakest, current) => {
                 const currentPower = current.infantry + current.tanks * 4;
                 const weakestPower = weakest.infantry + weakest.tanks * 4;
@@ -297,14 +291,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const targetPower = (target.infantry + target.tanks * 4) * 1.5;
             
-            // Бот атакует ТОЛЬКО если у него преимущество в 2 раза
-            // Или если игрок сам начал войну (упрощенно: если у игрока мало войск)
             const enemyPowerNearTarget = enemyCells
                 .filter(c => Math.abs(c.x - target.x) <= 2 && Math.abs(c.y - target.y) <= 2)
                 .reduce((sum, c) => sum + c.infantry + c.tanks * 4, 0);
 
+            // Бот атакует только при 2x преимуществе
             if (enemyPowerNearTarget > targetPower * 2.0) {
-                // Бот атакует!
                 updateStatus("Враг готовит наступление!");
                 
                 setTimeout(() => {
@@ -314,7 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     setTimeout(() => {
                         cellEl.classList.remove('attacked');
-                        // Логика атаки бота (упрощенная)
                         if (enemyPowerNearTarget > targetPower) {
                             target.owner = 'enemy';
                             target.infantry = Math.floor(enemyPowerNearTarget / 4);
@@ -322,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             cellEl.classList.add('lost');
                             flashStatus("Враг захватил вашу клетку!", "var(--danger)");
                             
-                            // Проверка на поражение
                             if (target.isCapital) {
                                 endGame(false);
                             }
@@ -361,24 +351,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
 
-                // Буст во время войны
                 if (state.timer) income *= 1.02;
-
                 state.gold += income;
                 
-                // Призыв пехоты (только в столице)
+                // Призыв в столице
                 const capital = state.grid.find(c => c.owner === 'player' && c.isCapital);
                 if (capital) {
                     let summonRate = 1;
                     if (state.doctrine === 'infantry') summonRate *= 1.4;
                     if (state.timer) summonRate *= 1.02;
                     
-                    if (Math.random() < 0.1 * summonRate) { // Шанс призыва
+                    if (Math.random() < 0.1 * summonRate) { 
                         state.infantry += 1;
                     }
                 }
 
-                // Ход бота (раз в 3 тика)
                 if (Math.random() < 0.33) {
                     botTurn();
                 }
@@ -397,7 +384,6 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.infDisplay.textContent = `Пехота: ${state.infantry}`;
         DOM.tankDisplay.textContent = `Танки: ${state.tanks}`;
 
-        // Блокировка кнопок
         DOM.buyInfBtn.disabled = state.gold < CONFIG.COST_INF;
         DOM.buyTankBtn.disabled = state.gold < CONFIG.COST_TANK;
 
@@ -406,18 +392,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById(`cell-${index}`);
             if (!el) return;
 
-            el.className = 'cell'; // Сброс классов
+            el.className = 'cell'; 
             if (cell.owner === 'player') el.classList.add('player-territory');
             if (cell.owner === 'enemy') el.classList.add('enemy-territory');
             if (cell.isCapital) el.classList.add('capital');
 
-            // Подсветка границы для атаки
             if (cell.owner === 'enemy' && checkIfBorder(cell.x, cell.y)) {
                 el.classList.add('selectable');
             }
 
             // Текст в клетке (кол-во войск)
-            const troops = cell.infantry + cell.tanks;
+            let troops = cell.infantry + cell.tanks;
+
+            // Если это наша столица, показываем в ней ВСЮ нашу армию
+            if (cell.owner === 'player' && cell.isCapital) {
+                troops += state.infantry + state.tanks;
+            }
+
             if (troops > 0) {
                 el.textContent = troops;
             } else {
