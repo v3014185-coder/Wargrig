@@ -42,7 +42,7 @@ function initScreens() {
 }
 
 /* ---------------------------------------------------------
-   КНОПКИ
+   КНОПКИ (Защищенные обработчики)
    --------------------------------------------------------- */
 
 function initMenuButtons() {
@@ -55,7 +55,13 @@ function initMenuButtons() {
     el.addEventListener('click', handler);
   };
 
-  // Переход из меню в игру (имитация входа в лобби)
+  // Вход в игру (кнопка "ИГРАТЬ" в профиле)
+  bind('btnPlay', () => {
+    show('screen-game');
+    startGameLoopIfNeeded();
+  });
+
+  // Вход в игру (кнопка "ВОЙТИ" в карточке карты)
   bind('btnEnterLobby', () => {
     show('screen-game');
     startGameLoopIfNeeded();
