@@ -1,5 +1,5 @@
 /* =========================================================
-   WarGrid — Логика RTS (Версия 7.0 — Финальная)
+   WarGrid — Логика RTS (Версия 8.0)
    ========================================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -76,7 +76,7 @@ function initButtons() {
         startJustification();
         hideCellMenu();
       } else {
-        setStatus("Оправдать можно только территорию врага!");
+        setStatus("Оправдать можно только базу врага!");
       }
     } else {
       setStatus("Лимит оправданий исчерпан (макс. 2)");
@@ -112,7 +112,7 @@ function restartGame() {
   state.selectedCell = null;
   buildMap(); hideCellMenu();
   if (gameLoopInterval) clearInterval(gameLoopInterval);
-  startLoop(); updateHUD(); setStatus("Захватите коричневую базу врага!");
+  startLoop(); updateHUD(); setStatus("Захватите коричневую базу!");
 }
 
 function buildMap() {
