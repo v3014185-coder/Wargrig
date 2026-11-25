@@ -160,8 +160,7 @@ function startLoop() {
 function enemyAI() {
   const enemyUnits = state.units.filter(u => u.owner === 'enemy');
   
-  // Бот теперь копит деньги и покупает реже (раз в 10 тиков) 
-  // и держит максимум 2 отряда (вместо 5)
+  // Бот копит деньги и покупает реже (раз в 10 тиков), держит максимум 2 отряда
   if (state.tick % 10 === 0 && enemyUnits.length < 2 && Math.random() > 0.4) {
     state.units.push({
       id: Date.now() + Math.random(),
@@ -171,15 +170,15 @@ function enemyAI() {
       targetX: null,
       targetY: null,
       moving: false,
-      // Сила врага теперь 2-4 человека (раньше была 5-10)
+      // Сила врага 2-4 человека
       strength: Math.floor(Math.random() * 3) + 2
     });
   }
   
-  // Бот отправляет юнитов реже и не всегда атакует базу (шанс атаки всего 30%)
+  // Бот отправляет юнитов реже и атакует базу игрока только в 30% случаев
   enemyUnits.forEach(u => {
     if (!u.moving && Math.random() > 0.5) {
-      const isAttack = Math.random() > 0.7; // 30% шанс пойти на базу игрока
+      const isAttack = Math.random() > 0.7;
       u.targetX = isAttack ? state.playerBase.x : Math.floor(Math.random() * CONFIG.COLS);
       u.targetY = isAttack ? state.playerBase.y : Math.floor(Math.random() * CONFIG.ROWS);
       u.moving = true;
