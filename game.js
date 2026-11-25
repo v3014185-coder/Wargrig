@@ -1,5 +1,5 @@
 /* =========================================================
-   WarGrid — Логика RTS (Версия 6.0 — Финальная)
+   WarGrid — Логика RTS (Версия 7.0 — Финальная)
    ========================================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -76,7 +76,7 @@ function initButtons() {
         startJustification();
         hideCellMenu();
       } else {
-        setStatus("Оправдать можно только базу врага!");
+        setStatus("Оправдать можно только территорию врага!");
       }
     } else {
       setStatus("Лимит оправданий исчерпан (макс. 2)");
@@ -90,7 +90,7 @@ const CONFIG = {
 };
 
 const state = {
-  gold: 0, tick: 0,
+  gold: 40, tick: 0,
   playerBase: { x: 1, y: 8 }, // Ваша желтая база
   enemyBase: { x: 12, y: 1 }, // База врага (коричневая)
   units: [], isGameOver: false,
@@ -150,7 +150,6 @@ function handleCellClick(x, y) {
   const btnJustify = document.getElementById('btnJustifyWar');
   const btnMove = document.getElementById('btnMoveTo');
   
-  // Настраиваем кнопки в зависимости от клетки
   if (cellEl.classList.contains('enemy-base')) {
     btnJustify.style.display = 'block';
     btnMove.textContent = "Захватить базу (ПОБЕДА)";
@@ -209,7 +208,6 @@ function startLoop() {
 function enemyAI() {
   const enemyUnits = state.units.filter(u => u.owner === 'enemy');
   
-  // Покупка юнитов
   if (state.tick % 15 === 0 && enemyUnits.length < 2 && Math.random() > 0.3) {
     state.units.push({
       id: Date.now() + Math.random(), owner: 'enemy',
@@ -219,19 +217,16 @@ function enemyAI() {
     });
   }
   
-  // Оправдание войны
   if (state.tick % 20 === 0 && state.botJustificationsUsed < 2 && state.botJustifyTimer === 0) {
     state.botJustificationsUsed++;
     state.botJustifyTimer = CONFIG.JUSTIFY_TIME;
   }
   
-  // Движение
   enemyUnits.forEach(u => {
     if (!u.moving && Math.random() > 0.5) {
       const canAttackPlayer = state.botDiscountActive;
       const targets = [];
       
-      // Бот всегда пытается захватить базу игрока, если оправдал войну
       if (canAttackPlayer) {
         targets.push(state.playerBase);
       } else {
@@ -250,7 +245,6 @@ function updateUnits() {
 
   state.units.forEach(unit => {
     if (unit.moving && (unit.x !== unit.targetX || unit.y !== unit.targetY)) {
-      // Движение по осям
       if (unit.x < unit.targetX) unit.x++;
       else if (unit.x > unit.targetX) unit.x--;
       else if (unit.y < unit.targetY) unit.y++;
@@ -261,11 +255,10 @@ function updateUnits() {
         const isEnemyBase = unit.x === state.enemyBase.x && unit.y === state.enemyBase.y;
         const isPlayerBase = unit.x === state.playerBase.x && unit.y === state.playerBase.y;
         
-        // Захват и проверка победы
         if (unit.owner === 'player' && isEnemyBase) {
-          endGame(true); // ВЫ ПОБЕДИЛИ
+          endGame(true); // ПОБЕДА
         } else if (unit.owner === 'enemy' && isPlayerBase) {
-          endGame(false); // ВЫ ПРОИГРАЛИ
+          endGame(false); // ПОРАЖЕНИЕ
         } else if (!isEnemyBase && !isPlayerBase) {
           cellEl.className = `cell ${unit.owner}`;
         }
@@ -281,7 +274,6 @@ function updateUnits() {
     cellOccupants[key].push(unit);
   });
 
-  // Бой
   for (const key in cellOccupants) {
     const unitsHere = cellOccupants[key];
     const players = unitsHere.filter(u => u.owner === 'player');
