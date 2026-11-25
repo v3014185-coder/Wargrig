@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>WarGrid | Стратегия</title>
-  <!-- Обновлено до v=6.0 для сброса кэша -->
-  <link rel="stylesheet" href="style.css?v=6.0" />
+  <!-- ЖЕСТКИЙ СБРОС КЭША: версия 7.0 -->
+  <link rel="stylesheet" href="style.css?v=7.0" />
 </head>
 <body>
 
@@ -49,7 +49,7 @@
         <li><strong>Ваша база (Желтая):</strong> Не дайте врагу её захватить!</li>
         <li><strong>База врага (Коричневая):</strong> Захватите её, чтобы победить.</li>
         <li><strong>Пехота:</strong> Покупайте отряды. Кликайте по клеткам, чтобы отправить их.</li>
-        <li><strong>Оправдание войны:</strong> Нажмите на коричневую базу и "Оправдать", чтобы снизить цены и получить бонус к золоту.</li>
+        <li><strong>Оправдание войны:</strong> Нажмите на коричневую базу и "Оправдать", чтобы снизить цены.</li>
       </ul>
       <button id="btnBack" class="btn btn-primary">НАЗАД</button>
     </div>
@@ -66,12 +66,12 @@
 
       <div class="action-panel">
         <button id="btnBuyInfantry" class="btn btn-primary btn-block">КУПИТЬ ПЕХОТУ (<span id="unitCost">20</span>💰)</button>
-        <div class="info-badge" id="statusMessage">Выберите клетку для атаки</div>
+        <div class="info-badge" id="statusMessage">Захватите коричневую базу!</div>
       </div>
 
       <div id="cellMenu" class="cell-menu hidden">
         <div class="menu-header">ДЕЙСТВИЯ</div>
-        <button id="btnMoveTo" class="btn btn-small btn-primary">Захватить территорию</button>
+        <button id="btnMoveTo" class="btn btn-small btn-primary">Захватить</button>
         <button id="btnJustifyWar" class="btn btn-small btn-danger">Оправдать войну</button>
         <button id="btnCancelMenu" class="btn btn-small btn-secondary">Отмена</button>
       </div>
@@ -80,7 +80,7 @@
     </div>
   </section>
 
-  <!-- Обновлено до v=6.0 для сброса кэша -->
-  <script src="game.js?v=6.0"></script>
+  <!-- ЖЕСТКИЙ СБРОС КЭША: версия 7.0 -->
+  <script src="game.js?v=7.0"></script>
 </body>
 </html>
