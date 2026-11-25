@@ -4,12 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>WarGrid | Стратегия</title>
-  <!-- Обновлено до v=5.0 для сброса кэша -->
-  <link rel="stylesheet" href="style.css?v=5.0" />
+  <!-- Обновлено до v=6.0 для сброса кэша -->
+  <link rel="stylesheet" href="style.css?v=6.0" />
 </head>
 <body>
 
-  <!-- ЭКРАН 1: ЛОББИ -->
   <section id="screen-menu" class="screen active">
     <div class="top-nav">
       <div class="logo">WARGRID</div>
@@ -17,54 +16,47 @@
         <div class="player-name">[СССР] Генералиссимус</div>
       </div>
     </div>
-
     <div class="main-content">
       <div class="map-card">
         <div class="map-header">
           <span class="map-tag">СЕКТОР: ВОСТОЧНЫЙ ФРОНТ</span>
           <span class="map-status">ПОДГОТОВКА К БОЮ</span>
         </div>
-        
         <div class="map-preview">
           <div class="hex-grid">
             <div class="hex player"></div><div class="hex enemy"></div><div class="hex neutral"></div>
             <div class="hex player"></div><div class="hex player"></div><div class="hex neutral"></div>
           </div>
         </div>
-
         <div class="map-info">
           <div>
             <h2>ПРОХОД "БАГРАТИОН"</h2>
-            <p>Режим: Захват территории</p>
+            <p>Цель: захватить коричневую базу врага</p>
           </div>
           <button id="btnEnterGame" class="btn btn-primary">В БОЙ</button>
         </div>
       </div>
-
       <div class="actions-row">
-        <button id="btnHelp" class="btn btn-secondary">БРИФИНГ (Как играть)</button>
+        <button id="btnHelp" class="btn btn-secondary">БРИФИНГ</button>
       </div>
     </div>
   </section>
 
-  <!-- ЭКРАН 2: БРИФИНГ (Правила) -->
   <section id="screen-help" class="screen hidden">
     <div class="modal">
       <h2>ПРИКАЗЫ ГЕНШТАБА</h2>
       <ul class="briefing-list">
-        <li><strong>Захват пустоши:</strong> Кликните по пустому квадрату, чтобы открыть мини-меню и отправить туда пехоту.</li>
-        <li><strong>Оправдание войны:</strong> Кликните по врагу (красному) и нажмите "Оправдать". Ждите таймер. Дает +2% к золоту и скидку 20% на юнитов (макс. 2 раза).</li>
-        <li><strong>Бой:</strong> Врага нельзя атаковать, пока он не оправдает войну. Захват клеток идет параллельно.</li>
-        <li><strong>Победа:</strong> Захватите желтую центральную точку раньше, чем враг захватит вашу коричневую.</li>
+        <li><strong>Ваша база (Желтая):</strong> Не дайте врагу её захватить!</li>
+        <li><strong>База врага (Коричневая):</strong> Захватите её, чтобы победить.</li>
+        <li><strong>Пехота:</strong> Покупайте отряды. Кликайте по клеткам, чтобы отправить их.</li>
+        <li><strong>Оправдание войны:</strong> Нажмите на коричневую базу и "Оправдать", чтобы снизить цены и получить бонус к золоту.</li>
       </ul>
-      <button id="btnBack" class="btn btn-primary">НАЗАД В ШТАБ</button>
+      <button id="btnBack" class="btn btn-primary">НАЗАД</button>
     </div>
   </section>
 
-  <!-- ЭКРАН 3: САМА ИГРА -->
   <section id="screen-game" class="screen hidden">
     <div class="game-layout">
-      
       <header class="hud">
         <div class="hud-item"><span>💰</span> <span id="hudGold">0</span></div>
         <div class="hud-item"><span>⏱</span> <span id="hudTick">0</span></div>
@@ -77,7 +69,6 @@
         <div class="info-badge" id="statusMessage">Выберите клетку для атаки</div>
       </div>
 
-      <!-- Мини-меню (появляется при клике на клетку) -->
       <div id="cellMenu" class="cell-menu hidden">
         <div class="menu-header">ДЕЙСТВИЯ</div>
         <button id="btnMoveTo" class="btn btn-small btn-primary">Захватить территорию</button>
@@ -89,7 +80,7 @@
     </div>
   </section>
 
-  <!-- Обновлено до v=5.0 для сброса кэша -->
-  <script src="game.js?v=5.0"></script>
+  <!-- Обновлено до v=6.0 для сброса кэша -->
+  <script src="game.js?v=6.0"></script>
 </body>
 </html>
