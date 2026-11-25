@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>WarGrid | Стратегия</title>
-  <link rel="stylesheet" href="style.css" />
+  <!-- Добавлено ?v=3.0 для сброса кэша браузера -->
+  <link rel="stylesheet" href="style.css?v=3.0" />
 </head>
 <body>
 
@@ -51,10 +52,10 @@
     <div class="modal">
       <h2>ПРИКАЗЫ ГЕНШТАБА</h2>
       <ul class="briefing-list">
-        <li><strong>Экономика:</strong> Клетки приносят золото каждый ход.</li>
-        <li><strong>Армия:</strong> Нажимайте "Купить пехоту" (тратит 20 золота). Появится отряд из 5-10 человек.</li>
-        <li><strong>Приказы:</strong> Кликните по вражеской или нейтральной клетке, чтобы ваши юниты двинулись туда, захватывая всё на пути.</li>
-        <li><strong>Бой:</strong> Если на пути враг, завязывается бой. У кого больше пехоты — тот побеждает.</li>
+        <li><strong>Экономика:</strong> Захваченные клетки приносят золото каждый тик.</li>
+        <li><strong>Армия:</strong> Нажмите "КУПИТЬ ПЕХОТУ" (20💰). Появится отряд из 5-10 бойцов.</li>
+        <li><strong>Приказы:</strong> Кликните по любой клетке, чтобы ваши юниты пошли туда, захватывая всё на пути.</li>
+        <li><strong>Бой:</strong> При встрече с врагом побеждает тот, у кого больше юнитов.</li>
       </ul>
       <button id="btnBack" class="btn btn-primary">НАЗАД В ШТАБ</button>
     </div>
@@ -68,8 +69,8 @@
       <header class="hud">
         <div class="hud-item"><span>💰</span> <span id="hudGold">0</span></div>
         <div class="hud-item"><span>⏱</span> <span id="hudTick">0</span></div>
-        <div class="hud-item enemy-info"><span>💀 ВРАГ:</span> <span id="hudEnemyGold">0</span> | <span id="hudEnemyUnits">0</span></div>
-        <button id="btnExit" class="btn btn-small btn-danger">СДАТЬСЯ</button>
+        <div class="hud-item enemy-info"><span>💀 ВРАГ:</span> <span id="hudEnemyUnits">0</span></div>
+        <button id="btnExit" class="btn btn-small btn-danger">ВЫЙТИ</button>
       </header>
 
       <!-- Действия -->
@@ -83,6 +84,7 @@
     </div>
   </section>
 
-  <script src="game.js"></script>
+  <!-- Добавлено ?v=3.0 для сброса кэша -->
+  <script src="game.js?v=3.0"></script>
 </body>
 </html>
