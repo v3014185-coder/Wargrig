@@ -1,5 +1,5 @@
 /* =========================================================
-   WarGrid — Стратегия в реальном времени (RTS)
+   WarGrid — Логика RTS (Исправленная и стабильная версия 3.0)
    ========================================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,18 +47,20 @@ function initButtons() {
   bind('btnBuyInfantry', () => {
     if (state.gold >= 20) {
       state.gold -= 20;
-      // Спавн 5-10 юнитов на базе
-      const count = Math.floor(Math.random() * 6) + 5;
+      // Спавн отряда: создаем ОДИН юнит с силой N (чтобы они не слипались в 1 пиксель)
+      const squadSize = Math.floor(Math.random() * 6) + 5; 
       state.units.push({
-        id: Date.now(),
+        id: Date.now() + Math.random(),
         owner: 'player',
         x: state.playerBase.x,
         y: state.playerBase.y,
         targetX: null,
-        targetY: null
+        targetY: null,
+        moving: false,
+        strength: squadSize // Сила отряда
       });
       updateHUD();
-      setStatus(`Прибыло подкрепление: ${count} чел.`);
+      setStatus(`Прибыл отряд: ${squadSize} чел.`);
     } else {
       setStatus("Недостаточно золота!");
     }
@@ -69,7 +71,7 @@ function initButtons() {
 const CONFIG = {
   COLS: 14,
   ROWS: 10,
-  TICK_RATE: 1000, // 1 секунда на тик
+  TICK_RATE: 800, // Ускорил тики для динамики
   GOLD_INCOME: 2,
   UNIT_COST: 20,
 };
@@ -80,29 +82,26 @@ const state = {
   tick: 0,
   playerBase: { x: 1, y: 8 },
   enemyBase: { x: 12, y: 1 },
-  cells: [],
   units: [],
-  selectedTarget: null,
   isGameOver: false,
 };
 
 let gameLoopInterval = null;
 
 function restartGame() {
-  state.gold = 50;
+  state.gold = 40;
   state.tick = 0;
   state.units = [];
-  state.cells = [];
-  state.selectedTarget = null;
   state.isGameOver = false;
   
   buildMap();
+  if (gameLoopInterval) clearInterval(gameLoopInterval);
   startLoop();
   updateHUD();
   setStatus("Бой начался. Покупайте пехоту!");
 }
 
-/* --- КАРТА И РЕНДЕР --- */
+/* --- КАРТА --- */
 function buildMap() {
   const grid = document.getElementById('grid');
   if (!grid) return;
@@ -115,11 +114,10 @@ function buildMap() {
       cell.dataset.x = x;
       cell.dataset.y = y;
       
-      // Начальные базы
       if (x === state.playerBase.x && y === state.playerBase.y) {
-        cell.classList.add('player');
+        cell.classList.replace('neutral', 'player');
       } else if (x === state.enemyBase.x && y === state.enemyBase.y) {
-        cell.classList.add('enemy');
+        cell.classList.replace('neutral', 'enemy');
       }
       
       cell.addEventListener('click', () => handleCellClick(x, y));
@@ -128,24 +126,21 @@ function buildMap() {
   }
 }
 
-/* --- ЛОГИКА КЛИКОВ --- */
+/* --- КЛИКИ --- */
 function handleCellClick(x, y) {
   if (state.isGameOver) return;
   
-  // Если кликнули по своей клетке, то назначаем цель для ВСЕХ своих юнитов
-  state.selectedTarget = { x, y };
-  setStatus(`Приказ: двигаться в квадрат [${x}, ${y}]`);
-  
-  // Отправляем всех свободных юнитов к цели
+  // Отправляем все отряды к цели
   state.units.forEach(u => {
-    if (u.owner === 'player' && !u.moving) {
+    if (u.owner === 'player') {
       u.targetX = x;
       u.targetY = y;
       u.moving = true;
     }
   });
   
-  // Подсветка цели
+  setStatus(`Приказ: выдвигаемся в [${x}, ${y}]`);
+  
   document.querySelectorAll('.cell').forEach(c => c.classList.remove('target'));
   const targetCell = getCellElement(x, y);
   if (targetCell) targetCell.classList.add('target');
@@ -153,33 +148,26 @@ function handleCellClick(x, y) {
 
 /* --- ИГРОВОЙ ЦИКЛ --- */
 function startLoop() {
-  if (gameLoopInterval) clearInterval(gameLoopInterval);
-  
   gameLoopInterval = setInterval(() => {
     if (state.isGameOver) return;
     state.tick++;
     
-    // 1. Экономика (доход от клеток)
+    // Доход
     let playerTerritory = document.querySelectorAll('.cell.player').length;
-    let enemyTerritory = document.querySelectorAll('.cell.enemy').length;
     state.gold += playerTerritory * CONFIG.GOLD_INCOME;
     
-    // 2. Логика Бота (Враг)
-    enemyAI(enemyTerritory);
-    
-    // 3. Движение и бой юнитов
+    enemyAI();
     updateUnits();
-    
-    // 4. Обновление интерфейса
     updateHUD();
-    
   }, CONFIG.TICK_RATE);
 }
 
-/* --- ИСКУССТВЕННЫЙ ИНТЕЛЛЕКТ ВРАГА --- */
-function enemyAI(enemyTerritory) {
-  // Бот покупает юнитов, если у него много территории
-  if (enemyTerritory > 3 && Math.random() > 0.7) {
+/* --- БОТ --- */
+function enemyAI() {
+  const enemyUnits = state.units.filter(u => u.owner === 'enemy');
+  
+  // Бот покупает отряды, если у него есть деньги
+  if (state.tick % 5 === 0 && enemyUnits.length < 5) {
     state.units.push({
       id: Date.now() + Math.random(),
       owner: 'enemy',
@@ -187,27 +175,17 @@ function enemyAI(enemyTerritory) {
       y: state.enemyBase.y,
       targetX: null,
       targetY: null,
-      moving: false
+      moving: false,
+      strength: Math.floor(Math.random() * 5) + 5
     });
   }
   
-  // Бот отправляет свободных юнитов захватывать нейтральные клетки или атаковать базу игрока
-  state.units.forEach(u => {
-    if (u.owner === 'enemy' && !u.moving && Math.random() > 0.8) {
-      // Ищем случайную нейтральную клетку или базу игрока
-      const isAttack = Math.random() > 0.6; // 40% шанс атаковать игрока
-      let targetX, targetY;
-      
-      if (isAttack) {
-        targetX = state.playerBase.x;
-        targetY = state.playerBase.y;
-      } else {
-        targetX = Math.floor(Math.random() * CONFIG.COLS);
-        targetY = Math.floor(Math.random() * CONFIG.ROWS);
-      }
-      
-      u.targetX = targetX;
-      u.targetY = targetY;
+  // Бот отправляет юнитов
+  enemyUnits.forEach(u => {
+    if (!u.moving) {
+      const isAttack = Math.random() > 0.7;
+      u.targetX = isAttack ? state.playerBase.x : Math.floor(Math.random() * CONFIG.COLS);
+      u.targetY = isAttack ? state.playerBase.y : Math.floor(Math.random() * CONFIG.ROWS);
       u.moving = true;
     }
   });
@@ -215,75 +193,87 @@ function enemyAI(enemyTerritory) {
 
 /* --- ДВИЖЕНИЕ И БОЙ --- */
 function updateUnits() {
-  // Очищаем все юниты с карты перед перерисовкой
   document.querySelectorAll('.unit-dot').forEach(el => el.remove());
   
-  // Клетки для обработки боя
-  const combatMap = {};
+  const cellOccupants = {}; // { "x,y": [units] }
 
   state.units.forEach(unit => {
-    // Если у юнита есть цель и он не на месте
+    // Движение
     if (unit.moving && (unit.x !== unit.targetX || unit.y !== unit.targetY)) {
-      // Шаг к цели (по X, затем по Y)
       if (unit.x < unit.targetX) unit.x++;
       else if (unit.x > unit.targetX) unit.x--;
       else if (unit.y < unit.targetY) unit.y++;
       else if (unit.y > unit.targetY) unit.y--;
       
-      // Захват территории на пути
+      // Захват на пути
       const cellEl = getCellElement(unit.x, unit.y);
-      if (cellEl && !cellEl.classList.contains(unit.owner)) {
-         // Захватываем только нейтральные или вражеские
-         cellEl.className = `cell ${unit.owner}`;
+      if (cellEl) {
+        const isEnemyBase = unit.x === state.enemyBase.x && unit.y === state.enemyBase.y;
+        const isPlayerBase = unit.x === state.playerBase.x && unit.y === state.playerBase.y;
+        
+        if (!isEnemyBase && !isPlayerBase) {
+           cellEl.className = `cell ${unit.owner}`;
+        } else if (unit.owner === 'enemy' && isPlayerBase) {
+           endGame(false); // Враг захватил базу
+        } else if (unit.owner === 'player' && isEnemyBase) {
+           endGame(true); // Мы захватили базу
+        }
       }
     }
     
-    // Проверка на прибытие
     if (unit.x === unit.targetX && unit.y === unit.targetY) {
       unit.moving = false;
-      unit.targetX = null;
-      unit.targetY = null;
     }
 
-    // Отрисовка юнита на карте
-    const cellEl = getCellElement(unit.x, unit.y);
-    if (cellEl) {
-      const unitEl = document.createElement('div');
-      unitEl.className = `unit-dot ${unit.owner}`;
-      cellEl.appendChild(unitEl);
-    }
-
-    // Сбор данных для боя
+    // Сбор для отрисовки и боя
     const key = `${unit.x},${unit.y}`;
-    if (!combatMap[key]) combatMap[key] = { player: 0, enemy: 0 };
-    combatMap[key][unit.owner]++;
+    if (!cellOccupants[key]) cellOccupants[key] = [];
+    cellOccupants[key].push(unit);
   });
 
-  // Разрешение боев
-  for (const pos in combatMap) {
-    const { player, enemy } = combatMap[pos];
-    if (player > 0 && enemy > 0) {
-      // Бой! Кто меньше, тот умирает
-      const [x, y] = pos.split(',').map(Number);
-      const survivors = Math.abs(player - enemy);
-      const winner = player > enemy ? 'player' : 'enemy';
+  // Разрешение конфликтов и отрисовка
+  for (const key in cellOccupants) {
+    const unitsHere = cellOccupants[key];
+    const players = unitsHere.filter(u => u.owner === 'player');
+    const enemies = unitsHere.filter(u => u.owner === 'enemy');
+    
+    if (players.length > 0 && enemies.length > 0) {
+      // Бой отрядов
+      const pPower = players.reduce((sum, u) => sum + (u.strength || 5), 0);
+      const ePower = enemies.reduce((sum, u) => sum + (u.strength || 5), 0);
       
-      // Удаляем всех в этой клетке
-      state.units = state.units.filter(u => !(u.x === x && u.y === y));
-      
-      // Добовляем выживших
-      for(let i=0; i<survivors; i++) {
-          state.units.push({ id: Date.now()+i, owner: winner, x, y, moving: false });
+      if (pPower > ePower) {
+        // Победа игрока
+        state.units = state.units.filter(u => !(u.owner === 'enemy' && `${u.x},${u.y}` === key));
+        players[0].strength = pPower - ePower; // Выжившие
+        const [x, y] = key.split(',').map(Number);
+        getCellElement(x, y).className = 'cell player';
+      } else if (ePower > pPower) {
+        // Победа врага
+        state.units = state.units.filter(u => !(u.owner === 'player' && `${u.x},${u.y}` === key));
+        enemies[0].strength = ePower - pPower;
+        const [x, y] = key.split(',').map(Number);
+        getCellElement(x, y).className = 'cell enemy';
+      } else {
+        // Ничья, все погибают
+        state.units = state.units.filter(u => `${u.x},${u.y}` !== key);
       }
-      
-      // Захват клетки победителем
-      const cellEl = getCellElement(x, y);
-      if (cellEl) cellEl.className = `cell ${winner}`;
     }
   }
+
+  // Отрисовка юнитов (после боя)
+  state.units.forEach(u => {
+    const cellEl = getCellElement(u.x, u.y);
+    if (cellEl) {
+      const el = document.createElement('div');
+      el.className = `unit-dot ${u.owner}`;
+      el.textContent = u.strength || 1;
+      cellEl.appendChild(el);
+    }
+  });
 }
 
-/* --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ --- */
+/* --- ВСПОМОГАТЕЛЬНЫЕ --- */
 function getCellElement(x, y) {
   return document.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
 }
@@ -291,17 +281,12 @@ function getCellElement(x, y) {
 function updateHUD() {
   const goldEl = document.getElementById('hudGold');
   const tickEl = document.getElementById('hudTick');
-  const enemyGoldEl = document.getElementById('hudEnemyGold');
   const enemyUnitsEl = document.getElementById('hudEnemyUnits');
   
   if (goldEl) goldEl.textContent = Math.floor(state.gold);
   if (tickEl) tickEl.textContent = state.tick;
   
-  // Считаем врагов
   const enemyUnitsCount = state.units.filter(u => u.owner === 'enemy').length;
-  const enemyTerritory = document.querySelectorAll('.cell.enemy').length;
-  
-  if (enemyGoldEl) enemyGoldEl.textContent = enemyTerritory * 10; // Имитация
   if (enemyUnitsEl) enemyUnitsEl.textContent = enemyUnitsCount;
 }
 
@@ -309,8 +294,15 @@ function setStatus(msg) {
   const el = document.getElementById('statusMessage');
   if (el) {
     el.textContent = msg;
-    // Легкая анимация появления
     el.style.color = '#fff';
-    setTimeout(() => el.style.color = '#aaa', 500);
+    setTimeout(() => el.style.color = '#aaa', 800);
   }
+}
+
+function endGame(isVictory) {
+  if (state.isGameOver) return;
+  state.isGameOver = true;
+  clearInterval(gameLoopInterval);
+  setStatus(isVictory ? "ПОБЕДА! ВРАГ РАЗБИТ." : "ПОРАЖЕНИЕ. БАЗА ЗАХВАЧЕНА.");
+  setTimeout(() => { show('screen-menu'); }, 3000);
 }
