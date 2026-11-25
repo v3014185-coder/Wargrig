@@ -2,24 +2,18 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>WarGrid | Стратегия</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- ЭКРАН 1: ЛОББИ (Стиль TERRON + Хойка) -->
+  <!-- ЭКРАН 1: ЛОББИ -->
   <section id="screen-menu" class="screen active">
     <div class="top-nav">
       <div class="logo">WARGRID</div>
-      <div class="nav-links">
-        <span>ПРОВИНЦИИ</span>
-        <span>АРМИЯ</span>
-        <span>ТЕХНОЛОГИИ</span>
-      </div>
       <div class="player-profile">
         <div class="player-name">[СССР] Генералиссимус</div>
-        <div class="player-res">💰 1250 | ⚙ 450 | 👥 12k</div>
       </div>
     </div>
 
@@ -27,11 +21,10 @@
       <div class="map-card">
         <div class="map-header">
           <span class="map-tag">СЕКТОР: ВОСТОЧНЫЙ ФРОНТ</span>
-          <span class="map-status">ОЖИДАНИЕ ИГРОКОВ</span>
+          <span class="map-status">ПОДГОТОВКА К БОЮ</span>
         </div>
         
         <div class="map-preview">
-          <!-- Имитация карты боевых действий -->
           <div class="hex-grid">
             <div class="hex player"></div><div class="hex enemy"></div><div class="hex neutral"></div>
             <div class="hex player"></div><div class="hex player"></div><div class="hex neutral"></div>
@@ -41,7 +34,7 @@
         <div class="map-info">
           <div>
             <h2>ПРОХОД "БАГРАТИОН"</h2>
-            <p>Лимит: 4 игрока | Сложность: Высокая</p>
+            <p>Режим: Захват территории</p>
           </div>
           <button id="btnEnterGame" class="btn btn-primary">В БОЙ</button>
         </div>
@@ -49,38 +42,43 @@
 
       <div class="actions-row">
         <button id="btnHelp" class="btn btn-secondary">БРИФИНГ (Как играть)</button>
-        <button class="btn btn-secondary">СОЗДАТЬ АРМИЮ</button>
       </div>
     </div>
-    
-    <footer class="footer">
-      <span>WarGrid v2.0 — Гибрид HOI4 & TERRON</span>
-    </footer>
   </section>
 
-  <!-- ЭКРАН 2: БРИФИНГ (Как играть) -->
+  <!-- ЭКРАН 2: БРИФИНГ (Правила) -->
   <section id="screen-help" class="screen hidden">
     <div class="modal">
       <h2>ПРИКАЗЫ ГЕНШТАБА</h2>
       <ul class="briefing-list">
-        <li><strong>Захват:</strong> Кликайте по своей территории, затем по вражеской, чтобы атаковать.</li>
-        <li><strong>Экономика:</strong> Захваченные клетки приносят ресурсы каждый ход.</li>
-        <li><strong>Оправдание войны:</strong> Перед атакой нужно подождать N ходов.</li>
-        <li><strong>Таймер:</strong> Игра пошаговая, каждый тик — 1 секунда.</li>
+        <li><strong>Экономика:</strong> Клетки приносят золото каждый ход.</li>
+        <li><strong>Армия:</strong> Нажимайте "Купить пехоту" (тратит 20 золота). Появится отряд из 5-10 человек.</li>
+        <li><strong>Приказы:</strong> Кликните по вражеской или нейтральной клетке, чтобы ваши юниты двинулись туда, захватывая всё на пути.</li>
+        <li><strong>Бой:</strong> Если на пути враг, завязывается бой. У кого больше пехоты — тот побеждает.</li>
       </ul>
       <button id="btnBack" class="btn btn-primary">НАЗАД В ШТАБ</button>
     </div>
   </section>
 
-  <!-- ЭКРАН 3: САМА ИГРА (Поле) -->
+  <!-- ЭКРАН 3: САМА ИГРА -->
   <section id="screen-game" class="screen hidden">
     <div class="game-layout">
+      
+      <!-- Верхняя панель (HUD) -->
       <header class="hud">
-        <div class="hud-resource"><span>ЗОЛОТО:</span> <span id="hudGold">0</span></div>
-        <div class="hud-resource"><span>ХОД:</span> <span id="hudTick">0</span></div>
-        <div class="hud-resource"><span>ОПРАВДАНИЕ ВОЙНЫ:</span> <span id="hudWarTimer">0</span></div>
-        <button id="btnExit" class="btn btn-small btn-secondary">ОТСТУПИТЬ</button>
+        <div class="hud-item"><span>💰</span> <span id="hudGold">0</span></div>
+        <div class="hud-item"><span>⏱</span> <span id="hudTick">0</span></div>
+        <div class="hud-item enemy-info"><span>💀 ВРАГ:</span> <span id="hudEnemyGold">0</span> | <span id="hudEnemyUnits">0</span></div>
+        <button id="btnExit" class="btn btn-small btn-danger">СДАТЬСЯ</button>
       </header>
+
+      <!-- Действия -->
+      <div class="action-panel">
+        <button id="btnBuyInfantry" class="btn btn-primary btn-block">КУПИТЬ ПЕХОТУ (20💰)</button>
+        <div class="info-badge" id="statusMessage">Выберите клетку для атаки</div>
+      </div>
+
+      <!-- Игровое поле -->
       <div id="grid" class="grid"></div>
     </div>
   </section>
