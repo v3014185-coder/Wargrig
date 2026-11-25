@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>WarGrid | Стратегия</title>
-  <!-- Добавлено ?v=3.0 для сброса кэша браузера -->
-  <link rel="stylesheet" href="style.css?v=3.0" />
+  <!-- Обновлено до v=5.0 для сброса кэша -->
+  <link rel="stylesheet" href="style.css?v=5.0" />
 </head>
 <body>
 
@@ -52,10 +52,10 @@
     <div class="modal">
       <h2>ПРИКАЗЫ ГЕНШТАБА</h2>
       <ul class="briefing-list">
-        <li><strong>Экономика:</strong> Захваченные клетки приносят золото каждый тик.</li>
-        <li><strong>Армия:</strong> Нажмите "КУПИТЬ ПЕХОТУ" (20💰). Появится отряд из 5-10 бойцов.</li>
-        <li><strong>Приказы:</strong> Кликните по любой клетке, чтобы ваши юниты пошли туда, захватывая всё на пути.</li>
-        <li><strong>Бой:</strong> При встрече с врагом побеждает тот, у кого больше юнитов.</li>
+        <li><strong>Захват пустоши:</strong> Кликните по пустому квадрату, чтобы открыть мини-меню и отправить туда пехоту.</li>
+        <li><strong>Оправдание войны:</strong> Кликните по врагу (красному) и нажмите "Оправдать". Ждите таймер. Дает +2% к золоту и скидку 20% на юнитов (макс. 2 раза).</li>
+        <li><strong>Бой:</strong> Врага нельзя атаковать, пока он не оправдает войну. Захват клеток идет параллельно.</li>
+        <li><strong>Победа:</strong> Захватите желтую центральную точку раньше, чем враг захватит вашу коричневую.</li>
       </ul>
       <button id="btnBack" class="btn btn-primary">НАЗАД В ШТАБ</button>
     </div>
@@ -65,7 +65,6 @@
   <section id="screen-game" class="screen hidden">
     <div class="game-layout">
       
-      <!-- Верхняя панель (HUD) -->
       <header class="hud">
         <div class="hud-item"><span>💰</span> <span id="hudGold">0</span></div>
         <div class="hud-item"><span>⏱</span> <span id="hudTick">0</span></div>
@@ -73,16 +72,24 @@
         <button id="btnExit" class="btn btn-small btn-danger">ВЫЙТИ</button>
       </header>
 
-      <!-- Действия -->
       <div class="action-panel">
-        <button id="btnBuyInfantry" class="btn btn-primary btn-block">КУПИТЬ ПЕХОТУ (20💰)</button>
+        <button id="btnBuyInfantry" class="btn btn-primary btn-block">КУПИТЬ ПЕХОТУ (<span id="unitCost">20</span>💰)</button>
         <div class="info-badge" id="statusMessage">Выберите клетку для атаки</div>
       </div>
 
-      <!-- Игровое поле -->
+      <!-- Мини-меню (появляется при клике на клетку) -->
+      <div id="cellMenu" class="cell-menu hidden">
+        <div class="menu-header">ДЕЙСТВИЯ</div>
+        <button id="btnMoveTo" class="btn btn-small btn-primary">Захватить территорию</button>
+        <button id="btnJustifyWar" class="btn btn-small btn-danger">Оправдать войну</button>
+        <button id="btnCancelMenu" class="btn btn-small btn-secondary">Отмена</button>
+      </div>
+
       <div id="grid" class="grid"></div>
     </div>
   </section>
 
-   <!-- Обновил версию до 4.0 для сброса кэша -->
-  <script src="game.js?v=4.0"></script>
+  <!-- Обновлено до v=5.0 для сброса кэша -->
+  <script src="game.js?v=5.0"></script>
+</body>
+</html>
